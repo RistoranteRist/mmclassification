@@ -579,6 +579,7 @@ class BEiTAttention(BaseModule):
                  qk_scale=None,
                  attn_drop_rate=0.,
                  proj_drop_rate=0.,
+                 use_rel_pos_bias=True,
                  init_cfg=None,
                  **kwargs):
         super().__init__(init_cfg=init_cfg)
@@ -594,7 +595,10 @@ class BEiTAttention(BaseModule):
             qkv_bias = False
 
         self.window_size = window_size
-        self._init_rel_pos_embedding()
+        if use_rel_pos_bias:
+            self._init_rel_pos_embedding()
+        else:
+            self.relative_position_bias_table = None
 
         self.qkv = nn.Linear(embed_dims, embed_dims * 3, bias=qkv_bias)
         self.attn_drop = nn.Dropout(attn_drop_rate)
@@ -642,7 +646,8 @@ class BEiTAttention(BaseModule):
 
     def init_weights(self):
         super().init_weights()
-        trunc_normal_(self.relative_position_bias_table, std=0.02)
+        if self.relative_position_bias_table is not None:
+            trunc_normal_(self.relative_position_bias_table, std=0.02)
 
     def forward(self, x):
         """

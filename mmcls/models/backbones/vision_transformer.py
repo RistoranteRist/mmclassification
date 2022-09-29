@@ -197,12 +197,15 @@ class BEiTTransformerEncoderLayer(TransformerEncoderLayer):
         dropout_layer = dict(type='DropPath', drop_prob=drop_path_rate)
         self.drop_path = build_dropout(
             dropout_layer) if dropout_layer else nn.Identity()
-        self.gamma_1 = nn.Parameter(
-            layer_scale_init_value * torch.ones((embed_dims)),
-            requires_grad=True)
-        self.gamma_2 = nn.Parameter(
-            layer_scale_init_value * torch.ones((embed_dims)),
-            requires_grad=True)
+        if layer_scale_init_value > 0.0:
+            self.gamma_1 = nn.Parameter(
+                layer_scale_init_value * torch.ones((embed_dims)),
+                requires_grad=True)
+            self.gamma_2 = nn.Parameter(
+                layer_scale_init_value * torch.ones((embed_dims)),
+                requires_grad=True)
+        else:
+            self.gamma_1, self.gamma_2 = nn.Identity(), nn.Identity()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x + self.drop_path(self.gamma_1 * self.attn(self.norm1(x)))
@@ -256,6 +259,8 @@ class VisionTransformer(BaseBackbone):
         output_cls_token (bool): Whether output the cls_token. If set True,
             ``with_cls_token`` must be True. Defaults to True.
         beit_style (bool): Whether or not use BEiT-style. Defaults to False.
+        use_rel_pos_bias (bool): Whether or not use
+            relative_position_bias_table in BEiT-style. Defaults to True.
         layer_scale_init_value (float): The initialization value for
             the learnable scaling of attention and FFN. Defaults to 0.1.
         interpolate_mode (str): Select the interpolate mode for position
@@ -339,6 +344,7 @@ class VisionTransformer(BaseBackbone):
                  frozen_stages=-1,
                  output_cls_token=True,
                  beit_style=False,
+                 use_rel_pos_bias=True,
                  layer_scale_init_value=0.1,
                  interpolate_mode='bicubic',
                  patch_cfg=dict(),
@@ -427,7 +433,8 @@ class VisionTransformer(BaseBackbone):
                 _layer_cfg.update(
                     dict(
                         layer_scale_init_value=layer_scale_init_value,
-                        window_size=self.patch_resolution))
+                        window_size=self.patch_resolution,
+                        attn_cfg=dict(use_rel_pos_bias=use_rel_pos_bias)))
                 _layer_cfg.pop('qkv_bias')
                 self.layers.append(BEiTTransformerEncoderLayer(**_layer_cfg))
             else:
