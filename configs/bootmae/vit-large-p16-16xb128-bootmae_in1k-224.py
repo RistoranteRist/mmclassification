@@ -9,7 +9,7 @@ model = dict(
     type='ImageClassifier',
     backbone=dict(
         type='VisionTransformer',
-        arch='base',
+        arch='large',
         img_size=224,
         patch_size=16,
         drop_path_rate=0.1,
@@ -23,7 +23,7 @@ model = dict(
     head=dict(
         type='LinearClsHead',
         num_classes=1000,
-        in_channels=768,
+        in_channels=1024,
         loss=dict(
             type='LabelSmoothLoss', label_smooth_val=0.1, mode='original'),
     ),
@@ -43,12 +43,12 @@ data_preprocessor = dict(
     # convert image from BGR to RGB
     to_rgb=True,
 )
-train_dataloader = dict(batch_size=256)
+train_dataloader = dict(batch_size=128)
 
 # schedule settings
 optim_wrapper = dict(
     optimizer=dict(
-        type='AdamW', lr=5e-3, weight_decay=0.05, eps=1e-8,
+        type='AdamW', lr=1.5e-3, weight_decay=0.05, eps=1e-8,
         betas=(0.9, 0.999)),
     paramwise_cfg=dict(
         norm_decay_mult=0.0,
@@ -63,5 +63,5 @@ optim_wrapper = dict(
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR
 # based on the actual training batch size.
-# base_batch_size = (16 GPUs) x (256 samples per GPU)
-auto_scale_lr = dict(base_batch_size=4096)
+# base_batch_size = (16 GPUs) x (128 samples per GPU)
+auto_scale_lr = dict(base_batch_size=2048)

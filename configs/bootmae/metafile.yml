@@ -1,0 +1,60 @@
+Collections:
+  - Name: BootMAE
+    Metadata:
+      Architecture:
+        - Attention Dropout
+        - Convolution
+        - Dense Connections
+        - Dropout
+        - GELU
+        - Layer Normalization
+        - Multi-Head Attention
+        - Scaled Dot-Product Attention
+        - Tanh Activation
+    Paper:
+      URL: https://arxiv.org/abs/2207.07116v1
+      Title: 'Bootstrapped Masked Autoencoders for Vision BERT Pretraining'
+    README: configs/bootmae/README.md
+    Code:
+      URL:
+      Version:
+
+Models:
+  - Name: vit-base-p16-3rdparty-16xb256-bootmae_in1k-224
+    In Collection: BootMAE
+    Metadata:
+      FLOPs: 17580000000
+      Parameters: 86560000
+      Training Data:
+        - ImageNet-1k
+    Results:
+    - Dataset: ImageNet-1k
+      Task: Image Classification
+      Metrics:
+        Top 1 Accuracy: 85.43
+        Top 5 Accuracy: 97.77
+    Weights:
+    Converted From:
+      Weights: https://github.com/LightDXY/BootMAE/releases/download/v0.1.0/BootMAE_Base_800_FT.pth
+      Code: https://github.com/LightDXY/BootMAE/blob/main/models/modeling_finetune_bootmae.py#L248
+    Config: configs/bootmae/vit-base-p16-16xb256-bootmae_in1k-224.py
+  - Name: vit-base-p32_in21k-pre-3rdparty_ft-64xb64_in1k-384
+    In Collection: Vision Transformer
+    Metadata:
+      FLOPs: 8560000000
+      Parameters: 88300000
+      Training Data:
+        - ImageNet-21k
+        - ImageNet-1k
+    Results:
+    - Dataset: ImageNet-1k
+      Task: Image Classification
+      Metrics:
+        Top 1 Accuracy: 84.01
+        Top 5 Accuracy: 97.08
+    Weights: https://download.openmmlab.com/mmclassification/v0/vit/finetune/vit-base-p32_in21k-pre-3rdparty_ft-64xb64_in1k-384_20210928-9cea8599.pth
+    Converted From:
+      Weights: https://console.cloud.google.com/storage/browser/_details/vit_models/augreg/B_32-i21k-300ep-lr_0.001-aug_light1-wd_0.1-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.01-res_384.npz
+      Code: https://github.com/LightDXY/BootMAE/blob/main/models/modeling_finetune_bootmae.py#L248
+    Config: configs/vision_transformer/vit-base-p32_ft-64xb64_in1k-384.py
+  

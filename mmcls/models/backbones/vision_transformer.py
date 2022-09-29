@@ -205,11 +205,15 @@ class BEiTTransformerEncoderLayer(TransformerEncoderLayer):
                 layer_scale_init_value * torch.ones((embed_dims)),
                 requires_grad=True)
         else:
-            self.gamma_1, self.gamma_2 = nn.Identity(), nn.Identity()
+            self.gamma_1, self.gamma_2 = None, None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = x + self.drop_path(self.gamma_1 * self.attn(self.norm1(x)))
-        x = x + self.drop_path(self.gamma_2 * self.ffn(self.norm2(x)))
+        if self.gamma_1 is None:
+            x = x + self.drop_path(self.attn(self.norm1(x)))
+            x = x + self.drop_path(self.ffn(self.norm2(x)))
+        else:
+            x = x + self.drop_path(self.gamma_1 * self.attn(self.norm1(x)))
+            x = x + self.drop_path(self.gamma_2 * self.ffn(self.norm2(x)))
         return x
 
 
