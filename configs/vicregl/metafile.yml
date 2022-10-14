@@ -1,0 +1,34 @@
+Collections:
+  - Name: VICRegL
+    Metadata:
+      Training Data: ImageNet-1k
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+        - 1x1 Convolution
+        - LayerScale
+      Architecture:
+        - ResNet
+        - ConvNeXt
+    Paper:
+      URL: https://arxiv.org/abs/2210.01571
+      Title: "VICRegL: Self-Supervised Learning of Local Visual Features"
+    README: configs/vicregl/README.md
+    Code:
+      URL:
+      Version:
+
+Models:
+  - Name: vicregl_resnet50_8xb8_cub
+    Metadata:
+      FLOPs: 16480000000
+      Parameters: 23920000
+    In Collection: ResNet
+    Results:
+      - Dataset: CUB-200-2011
+        Metrics:
+          Top 1 Accuracy: 
+        Task: Image Classification
+    Pretrain: https://dl.fbaipublicfiles.com/vicregl/resnet50_alpha0.9.pth
+    Weights: 
+    Config: configs/vicregl/vicregl_resnet50_8xb8_cub.py
