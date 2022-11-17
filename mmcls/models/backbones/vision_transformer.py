@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Sequence, Tuple, Union
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.utils.checkpoint as cp
 from mmcv.cnn import build_norm_layer
 from mmcv.cnn.bricks.drop import build_dropout
 from mmcv.cnn.bricks.transformer import FFN, PatchEmbed
@@ -48,12 +49,14 @@ class TransformerEncoderLayer(BaseModule):
                  drop_path_rate=0.,
                  num_fcs=2,
                  qkv_bias=True,
+                 with_cp=False,
                  act_cfg=dict(type='GELU'),
                  norm_cfg=dict(type='LN'),
                  init_cfg=None):
         super(TransformerEncoderLayer, self).__init__(init_cfg=init_cfg)
 
         self.embed_dims = embed_dims
+        self.with_cp = with_cp
 
         self.norm1_name, norm1 = build_norm_layer(
             norm_cfg, self.embed_dims, postfix=1)
@@ -95,8 +98,17 @@ class TransformerEncoderLayer(BaseModule):
                 nn.init.normal_(m.bias, std=1e-6)
 
     def forward(self, x):
-        x = x + self.attn(self.norm1(x))
-        x = self.ffn(self.norm2(x), identity=x)
+
+        def _inner_forward(x):
+            x = x + self.attn(self.norm1(x))
+            x = self.ffn(self.norm2(x), identity=x)
+            return x
+
+        if self.with_cp and x.requires_grad:
+            x = cp.checkpoint(_inner_forward, x)
+        else:
+            x = _inner_forward(x)
+
         return x
 
 
@@ -150,6 +162,7 @@ class BEiTTransformerEncoderLayer(TransformerEncoderLayer):
                  drop_path_rate: float = 0.,
                  num_fcs: int = 2,
                  bias: Union[str, bool] = 'qv_bias',
+                 with_cp: bool = False,
                  act_cfg: dict = dict(type='GELU'),
                  norm_cfg: dict = dict(type='LN'),
                  attn_cfg: dict = dict(),
@@ -166,6 +179,7 @@ class BEiTTransformerEncoderLayer(TransformerEncoderLayer):
             drop_rate=0.,
             num_fcs=num_fcs,
             qkv_bias=bias,
+            with_cp=with_cp,
             act_cfg=act_cfg,
             norm_cfg=norm_cfg,
             init_cfg=init_cfg)
@@ -205,8 +219,17 @@ class BEiTTransformerEncoderLayer(TransformerEncoderLayer):
             requires_grad=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = x + self.drop_path(self.gamma_1 * self.attn(self.norm1(x)))
-        x = x + self.drop_path(self.gamma_2 * self.ffn(self.norm2(x)))
+
+        def _inner_forward(x):
+            x = x + self.drop_path(self.gamma_1 * self.attn(self.norm1(x)))
+            x = x + self.drop_path(self.gamma_2 * self.ffn(self.norm2(x)))
+            return x
+
+        if self.with_cp and x.requires_grad:
+            x = cp.checkpoint(_inner_forward, x)
+        else:
+            x = _inner_forward(x)
+
         return x
 
 
@@ -341,6 +364,7 @@ class VisionTransformer(BaseBackbone):
                  beit_style=False,
                  layer_scale_init_value=0.1,
                  interpolate_mode='bicubic',
+                 with_cp=False,
                  patch_cfg=dict(),
                  layer_cfgs=dict(),
                  init_cfg=None):
@@ -421,6 +445,7 @@ class VisionTransformer(BaseBackbone):
                 drop_rate=drop_rate,
                 drop_path_rate=dpr[i],
                 qkv_bias=qkv_bias,
+                with_cp=with_cp,
                 norm_cfg=norm_cfg)
             _layer_cfg.update(layer_cfgs[i])
             if beit_style:
