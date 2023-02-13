@@ -143,6 +143,8 @@ class VisionTransformer(BaseBackbone):
             -1 means not freezing any parameters. Defaults to -1.
         output_cls_token (bool): Whether output the cls_token. If set True,
             ``with_cls_token`` must be True. Defaults to True.
+        output_patch_token (bool): Whether output the patch_token.
+            Defaults to True.
         interpolate_mode (str): Select the interpolate mode for position
             embeding vector resize. Defaults to "bicubic".
         patch_cfg (dict): Configs of patch embeding. Defaults to an empty dict.
@@ -233,6 +235,7 @@ class VisionTransformer(BaseBackbone):
                  avg_token=False,
                  frozen_stages=-1,
                  output_cls_token=True,
+                 output_patch_token=True,
                  interpolate_mode='bicubic',
                  patch_cfg=dict(),
                  layer_cfgs=dict(),
@@ -271,6 +274,11 @@ class VisionTransformer(BaseBackbone):
         self.patch_embed = PatchEmbed(**_patch_cfg)
         self.patch_resolution = self.patch_embed.init_out_size
         num_patches = self.patch_resolution[0] * self.patch_resolution[1]
+
+        # check output
+        assert output_cls_token or output_patch_token, 'output_cls_token or ' \
+            'output_patch_token should be True. But both are False.'
+        self.output_patch_token = output_patch_token
 
         # Set cls token
         if output_cls_token:
@@ -454,8 +462,10 @@ class VisionTransformer(BaseBackbone):
                         B, patch_resolution[0] * patch_resolution[1],
                         C).mean(dim=1)
                     patch_token = self.norm2(patch_token)
-                if self.output_cls_token:
+                if self.output_cls_token and self.output_patch_token:
                     out = [patch_token, cls_token]
+                elif self.output_cls_token:
+                    out = cls_token
                 else:
                     out = patch_token
                 outs.append(out)

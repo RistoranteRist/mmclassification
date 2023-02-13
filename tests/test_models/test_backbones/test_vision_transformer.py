@@ -160,6 +160,23 @@ class TestVisionTransformer(TestCase):
         patch_token = outs[-1]
         self.assertEqual(patch_token.shape, (1, 768, 14, 14))
 
+        # test without output_patch_token
+        cfg = deepcopy(self.cfg)
+        cfg['output_patch_token'] = False
+        model = VisionTransformer(**cfg)
+        outs = model(imgs)
+        self.assertIsInstance(outs, tuple)
+        self.assertEqual(len(outs), 1)
+        cls_token = outs[-1]
+        self.assertEqual(cls_token.shape, (1, 768))
+
+        # test without output_patch_token and output_cls_token
+        cfg = deepcopy(self.cfg)
+        cfg['output_cls_token'] = False
+        cfg['output_patch_token'] = False
+        with self.assertRaisesRegex(AssertionError, 'output_cls_token or'):
+            model = VisionTransformer(**cfg)
+
         # Test forward with multi out indices
         cfg = deepcopy(self.cfg)
         cfg['out_indices'] = [-3, -2, -1]

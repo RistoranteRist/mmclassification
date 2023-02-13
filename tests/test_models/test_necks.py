@@ -2,8 +2,9 @@
 import pytest
 import torch
 
-from mmcls.models.necks import (GeneralizedMeanPooling, GlobalAveragePooling,
-                                HRFuseScales, LinearReduction)
+from mmcls.models.necks import (CLIPProjection, GeneralizedMeanPooling,
+                                GlobalAveragePooling, HRFuseScales,
+                                LinearReduction)
 
 
 def test_gap_neck():
@@ -110,6 +111,7 @@ def test_linear_reduction():
     neck.eval()
     assert isinstance(neck.act, torch.nn.Identity)
     assert isinstance(neck.norm, torch.nn.Identity)
+    assert neck.reduction.bias is not None
 
     # batch_size, in_channels, out_channels
     fake_input = torch.rand(1, 10)
@@ -136,6 +138,12 @@ def test_linear_reduction():
     assert isinstance(neck.act, torch.nn.ReLU)
     assert isinstance(neck.norm, torch.nn.BatchNorm1d)
 
+    # test linear_reduction with `bias=False`
+    neck = LinearReduction(10, 5, bias=False)
+    neck.eval()
+
+    assert neck.reduction.bias is None
+
     # batch_size, in_channels, out_channels
     fake_input = torch.rand(1, 10)
     output = neck(fake_input)
@@ -151,3 +159,20 @@ def test_linear_reduction():
 
     with pytest.raises(AssertionError):
         neck([])
+
+
+def test_clip_proj():
+
+    in_channels = 128
+    out_channels = 64
+    neck = CLIPProjection(in_channels=in_channels, out_channels=out_channels)
+
+    input_tensor = torch.rand(3, in_channels)
+
+    with pytest.raises(AssertionError):
+        neck(input_tensor)
+
+    outs = neck((input_tensor, ))
+    assert isinstance(outs, tuple)
+    assert len(outs) == 1
+    assert outs[0].shape == (3, out_channels)

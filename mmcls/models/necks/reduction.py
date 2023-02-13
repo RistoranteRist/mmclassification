@@ -21,6 +21,8 @@ class LinearReduction(BaseModule):
             config norm layer. Defaults to dict(type='BN1d').
         act_cfg (dict, optional): dictionary to construct and
             config activate layer. Defaults to None.
+        bias (bool): If set to False, the reduction layer will not learn an
+            additive bias. Defaults to True.
         init_cfg (dict, optional): dictionary to initialize weights.
             Defaults to None.
     """
@@ -30,6 +32,7 @@ class LinearReduction(BaseModule):
                  out_channels: int,
                  norm_cfg: Optional[dict] = dict(type='BN1d'),
                  act_cfg: Optional[dict] = None,
+                 bias: bool = True,
                  init_cfg: Optional[dict] = None):
         super(LinearReduction, self).__init__(init_cfg=init_cfg)
 
@@ -39,7 +42,7 @@ class LinearReduction(BaseModule):
         self.act_cfg = copy.deepcopy(act_cfg)
 
         self.reduction = nn.Linear(
-            in_features=in_channels, out_features=out_channels)
+            in_features=in_channels, out_features=out_channels, bias=bias)
         if norm_cfg:
             self.norm = build_norm_layer(norm_cfg, out_channels)[1]
         else:
